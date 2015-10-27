@@ -14,6 +14,7 @@ class VoiceChannelConnection {
 		this.session;
 		this.endpoint;
 		this.connected = false;
+		this.errorCallback = function(e){console.log(e.stack)};
 
 		this.initData = {
 			op: 4,
@@ -77,23 +78,65 @@ class VoiceChannelConnection {
 		
 		// create websocket
 		self.websocket = new WebSocket("ws://" + self.endpoint, null, { rejectUnauthorized: false });
-		
-		self.websocket.onopen = function(){
-			
+
+		self.websocket.onopen = function () {
+
 			var initData = {
-				op : 0,
-				d : {
-					"server_id" : self.server.id,
-					"user_id" : self.client.user.id,
-					"session_id" : self.session,
-					"token" : self.token
+				op: 0,
+				d: {
+					"server_id": self.server.id,
+					"user_id": self.client.user.id,
+					"session_id": self.sessionID,
+					"token": self.token
 				}
 			}
-			
+
 			self.websocket.send(JSON.stringify(initData));
-			
+
 		};
-		
+
+		self.websocket.onclose = function () {
+			console.log("i cri");
+		}
+
+		self.websocket.onmessage = function (e) {
+
+			var dat = JSON.parse(e.data);
+			var data = dat.d;
+			switch (dat.op) {
+
+				case 2:
+					/*
+					{ ssrc: 1,
+					port: 50276,
+					modes: [ 'plain', 'xsalsa20_poly1305' ],
+					heartbeat_interval: 41250 }
+					*/
+
+					self.websocketData = data;
+
+					setInterval(function () {
+						self.websocket.send(JSON.stringify({
+							"op": 3,
+							"d": null
+						}), self.websocketData.heartbeat_interval);
+					});
+					
+					var udpPacket = new Buffer(70);
+					udpPacket.writeUIntBE(data.ssrc, 0, 4);
+					self.udp.send(
+						udpPacket,
+						0,
+						udpPacket.length,
+						data.port,
+						self.endpoint,
+						self.errorCallback
+					);
+					break;
+
+			}
+
+		}
 	}
 
 }
