@@ -1,4 +1,5 @@
 var WebSocket = require("ws");
+var dns = require("dns");
 
 class VoiceChannelConnection{
 	
@@ -11,6 +12,7 @@ class VoiceChannelConnection{
 		this.token;
 		this.session;
 		this.endpoint;
+		this.connected = false;
 		
 		this.initData = {
 			op : 4,
@@ -25,8 +27,16 @@ class VoiceChannelConnection{
 		this.client.sendPacket(this.initData);
 	}
 	
-	init(token, session, endpoint){
+	init(){
+		var self = this;
 		
+		this.endpoint = this.endpoint.replace(":80", "");
+		
+		dns.lookup(this.endpoint, function(err, address, family){
+			
+			self.endpoint = address;
+			
+		});
 	}
 	
 }

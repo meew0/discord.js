@@ -1576,6 +1576,57 @@ class Client {
 					self.trigger("serverRoleUpdate", server, role, newRole);
 
 					break;
+					
+				case "VOICE_STATE_UPDATE":
+					
+					/*
+					{ user_id: '802974106246286688',
+						suppress: false,
+						session_id: 'ad39 etc',
+						self_mute: false,
+						self_deaf: false,
+						mute: false,
+						guild_id: '108286363619518432',
+						deaf: false,
+						channel_id: '12816563633648' }
+					*/
+					
+					var userID = data.user_id;
+					if(userID === self.user.id){
+						if(self.voiceChannels[data.channel_id])
+							self.voiceChannels[data.channel_id].sessionID = data.session_id;
+					}
+					
+					break;
+					
+				case "VOICE_SERVER_UPDATE":
+					/*
+					{ token: 'ec8237fd91bdabcc9',
+						guild_id: '10218363019534412',
+						endpoint: 'us-east15.discord.gg:80' }
+					*/
+					var connection;
+					for(var vccKey in self.voiceChannels){
+						var vcc = self.voiceChannels[vccKey];
+						if(!vcc.connected){
+							if(vcc.voiceChannel.server.id === data.guild_id){
+								connection = vcc;
+								break;
+							}
+						}
+					}
+					
+					if(!vcc){
+						// do an error
+						break;
+					}
+					
+					vcc.token = data.token;
+					vcc.endpoint = data.endpoint;
+					
+					vcc.init();
+					
+					break;
 
 				default:
 					self.debug("received unknown packet");
