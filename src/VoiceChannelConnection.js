@@ -2,10 +2,11 @@ var WebSocket = require("ws");
 
 class VoiceChannelConnection{
 	
-	constructor(voiceChannel){
+	constructor(voiceChannel, client){
 		this.voiceChannel = voiceChannel;
-		this.websocket = new WebSocket();
+		this.client = client;
 		
+		this.websocket;
 		this.server = voiceChannel.server;
 		this.token;
 		this.session;
@@ -15,12 +16,13 @@ class VoiceChannelConnection{
 			op : 4,
 			d : {
 				guild_id : this.server.id,
-				channel_id  : this.voiceChannel_id,
+				channel_id  : this.voiceChannel.id,
 				self_mute : false,
 				self_deaf : false
 			}
 		}
 		
+		this.client.sendPacket(this.initData);
 	}
 	
 	init(token, session, endpoint){

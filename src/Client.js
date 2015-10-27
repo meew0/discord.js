@@ -210,30 +210,32 @@ class Client {
 		
 		return new Promise(function(resolve, reject){
 			
-			var channelID = self.resolveDestination(channel);
-			var channel = self.getChannel("id", channelID);
-			
-			if(!channel){
-				var err = new Error("channel does not exist");
-				callback(err);
-				reject(err);
-				return;
+			function dieError(e){
+				reject(e);
+				callback(e);
 			}
 			
-			if(!(channel instanceof VoiceChannel)){
-				var err = new Error("channel not a voice channel");
-				callback(err);
-				reject(err);
-				return;
-			}
+			self.resolveDestination(channel).then(contin).catch(dieError);
 			
-			if(self.voiceChannels[channel.id]){
-				callback(new Error("already connected/joining channel"));
-				reject(new Error("already connected/joining channel"));
-			}else{
-				self.voiceChannels[channel.id] = new VoiceChannelConnection(channel);
+			function contin(channelID){
+				var channel = self.getChannel("id", channelID);
+				
+				if(!channel){
+					dieError(new Error("channel does not exist"));
+					return;
+				}
+				
+				if(!(channel instanceof VoiceChannel)){
+					dieError(new Error("channel not a voice channel"));
+					return;
+				}
+				
+				if(self.voiceChannels[channel.id]){
+					dieError(new Error("already connected/joining channel"));
+				}else{
+					self.voiceChannels[channel.id] = new VoiceChannelConnection(channel, self);
+				}
 			}
-			
 		});
 		
 	}
