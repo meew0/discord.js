@@ -2,7 +2,7 @@
 var Endpoints = require("./Endpoints.js");
 var User = require("./user.js");
 var Server = require("./server.js");
-var Channel = require("./channel.js");
+var Channel = require("./channel.js"), VoiceChannel = require("./VoiceChannel.js");
 var Message = require("./message.js");
 var Invite = require("./invite.js");
 var PMChannel = require("./PMChannel.js");
@@ -29,12 +29,12 @@ class Client {
 		*/
         this.options = options;
 		this.options.compress = options.compress;
-		
-		if(this.options.compress){
+
+		if (this.options.compress) {
 			// only require zlib if necessary
 			zlib = require("zlib");
 		}
-		
+
 		this.token = token;
 		this.state = 0;
 		this.websocket = null;
@@ -194,30 +194,30 @@ class Client {
 		});
 
 	}
-	
-	banMember(user, server, daysToDeleteMessage=1, cb=function(err){}){
-		
+
+	banMember(user, server, daysToDeleteMessage = 1, cb = function (err) { }) {
+
 		var self = this;
-		
-		return new Promise(function(resolve, reject){
-			
+
+		return new Promise(function (resolve, reject) {
+
 			var serverID = self.resolveServerID(server);
 			var memberID = self.resolveUserID(user);
-			
+
 			request
 				.put(`${Endpoints.SERVERS}/${serverID}/bans/${memberID}?delete-message-days=${daysToDeleteMessage}`)
 				.set("authorization", self.token)
-				.end(function(err, res){
+				.end(function (err, res) {
 					cb(err);
-					if(err){
+					if (err) {
 						reject(err);
-					}else{
+					} else {
 						resolve();
 					}
 				});
-			
+
 		});
-		
+
 	}
 
 	logout(callback = function (err) { }) {
@@ -551,14 +551,14 @@ class Client {
 							var mentions = [];
 							for (var mention of message.mentions) {
 								var user = self.addUser(mention);
-								if(channel.server)
+								if (channel.server)
 									mentions.push(channel.server.getMember("id", user.id) || user);
 								else
 									mentions.push(user);
 							}
 
 							var authorRaw = self.addUser(message.author), author;
-							if(channel.server)
+							if (channel.server)
 								author = channel.server.getMember("id", authorRaw.id) || authorRaw;
 							else
 								author = authorRaw;
@@ -797,38 +797,38 @@ class Client {
 		return prom;
 	}
 
-	createRoleIfNotExists(dest, data, cb = function(err, role){}){
-		
+	createRoleIfNotExists(dest, data, cb = function (err, role) { }) {
+
 		var self = this;
-		
-		return new Promise(function(resolve, reject){
-			
+
+		return new Promise(function (resolve, reject) {
+
 			var serverID = self.resolveServerID(dest);
 			var server = self.getServer("id", serverID);
-			
+
 			var baseRole = new ServerPermissions({}, server);
-			for(var key in data){
+			for (var key in data) {
 				baseRole[key] = data[key];
 			}
-			
-			for(var role of server.roles){
-				if(baseRole.name == role.name && baseRole.packed == role.packed && baseRole.color == role.color){
+
+			for (var role of server.roles) {
+				if (baseRole.name == role.name && baseRole.packed == role.packed && baseRole.color == role.color) {
 					resolve(role);
 					cb(null, role);
 					return false;
 				}
 			}
-			
-			self.createRole(dest, data).then( (role) => {
+
+			self.createRole(dest, data).then((role) => {
 				cb(null, role);
 				resolve(role);
 			}).catch((e) => {
 				cb(e);
 				reject(e);
 			});
-			
+
 		});
-		
+
 	}
 
 	createRole(dest, data, cb = function (err, role) { }) {
@@ -912,132 +912,132 @@ class Client {
 		});
 
 	}
-	
-	deleteRole(role, callback = function(err){}){
+
+	deleteRole(role, callback = function (err) { }) {
 		
 		// role is a ServerPermissions
 		var self = this;
-		
-		return new Promise(function(resolve, reject){
-			
+
+		return new Promise(function (resolve, reject) {
+
 			request
 				.del(`${Endpoints.SERVERS}/${role.server.id}/roles/${role.id}`)
 				.set("authorization", self.token)
-				.end(function(err){
-					if(err){
+				.end(function (err) {
+					if (err) {
 						reject(err);
 						callback(err);
-					}else{
+					} else {
 						resolve();
 						callback();
 					}
 				})
-			
+
 		});
-		
+
 	}
 
 	addMemberToRole(member, role, callback = function (err) { }) {
 		var self = this;
 
 		return new Promise(function (resolve, reject) {
-			try{
-			var serverId = self.resolveServerID(member.server);
-			var memberId = self.resolveUserID(member);
+			try {
+				var serverId = self.resolveServerID(member.server);
+				var memberId = self.resolveUserID(member);
 
-			var acServer = self.getServer("id", serverId);
-			var acMember = acServer.getMember("id", memberId);
-			
-			if(acMember.rawRoles.indexOf(role.id) !== -1){
-				// user already has role
-				return;
-			}
+				var acServer = self.getServer("id", serverId);
+				var acMember = acServer.getMember("id", memberId);
 
-			request
-				.patch(`https://discordapp.com/api/guilds/${serverId}/members/${memberId}`)
-				.set("authorization", self.token)
-				.send({
-					roles: acMember.rawRoles.concat(role.id)
-				})
-				.end(function (err) {
-					if (err) {
-						reject(err);
-						callback(err);
-					} else {
-						acMember.addRole(role);
-						resolve();
-						callback();
-					}
+				if (acMember.rawRoles.indexOf(role.id) !== -1) {
+					// user already has role
+					return;
+				}
 
-				});
-			}catch(e){
+				request
+					.patch(`https://discordapp.com/api/guilds/${serverId}/members/${memberId}`)
+					.set("authorization", self.token)
+					.send({
+						roles: acMember.rawRoles.concat(role.id)
+					})
+					.end(function (err) {
+						if (err) {
+							reject(err);
+							callback(err);
+						} else {
+							acMember.addRole(role);
+							resolve();
+							callback();
+						}
+
+					});
+			} catch (e) {
 				reject(e);
 			}
 		});
 	}
-	
+
 	removeMemberFromRole(member, role, callback = function (err) { }) {
 		var self = this;
 
 		return new Promise(function (resolve, reject) {
-			try{
-			var serverId = self.resolveServerID(member.server);
-			var memberId = self.resolveUserID(member);
+			try {
+				var serverId = self.resolveServerID(member.server);
+				var memberId = self.resolveUserID(member);
 
-			var acServer = self.getServer("id", serverId);
-			var acMember = acServer.getMember("id", memberId);
+				var acServer = self.getServer("id", serverId);
+				var acMember = acServer.getMember("id", memberId);
 
-			if(~acMember.rawRoles.indexOf(role.id)){
-				acMember.removeRole(role);
-			}
+				if (~acMember.rawRoles.indexOf(role.id)) {
+					acMember.removeRole(role);
+				}
 
-			request
-				.patch(`https://discordapp.com/api/guilds/${serverId}/members/${memberId}`)
-				.set("authorization", self.token)
-				.send({
-					roles: acMember.rawRoles
-				})
-				.end(function (err) {
-					if (err) {
-						reject(err);
-						callback(err);
-					} else {
-						acMember.addRole(role);
-						resolve();
-						callback();
-					}
+				request
+					.patch(`https://discordapp.com/api/guilds/${serverId}/members/${memberId}`)
+					.set("authorization", self.token)
+					.send({
+						roles: acMember.rawRoles
+					})
+					.end(function (err) {
+						if (err) {
+							reject(err);
+							callback(err);
+						} else {
+							acMember.addRole(role);
+							resolve();
+							callback();
+						}
 
-				});
-			}catch(e){
+					});
+			} catch (e) {
 				reject(e);
 			}
 		});
 	}
-	
-	overwritePermissions(channel, role, updatedStuff, callback=function(err){}){
-		
+
+	overwritePermissions(channel, role, updatedStuff, callback = function (err) { }) {
+
 		var self = this;
-		
-		return new Promise(function(resolve, reject){
-			
+
+		return new Promise(function (resolve, reject) {
+
 			var data;
-			
-			if( role instanceof ServerPermissions || role.type === "role" ){
+
+			if (role instanceof ServerPermissions || role.type === "role") {
 				data = ad(updatedStuff);
 				data.id = role.id;
 				data.type = "role";
-			}else{
-				
+			} else {
+
 				data = ad(updatedStuff);
 				data.id = role.id;
 				data.type = "member";
-				
+
 			}
 			request
 				.put(`${Endpoints.CHANNELS}/${channel.id}/permissions/${role.id}`)
 				.set("authorization", self.token)
 				.send(data)
-				.end(function(err){
+				.end(function (err) {
 					if (err) {
 						reject(err);
 						callback(err);
@@ -1046,21 +1046,21 @@ class Client {
 						callback();
 					}
 				});
-			
+
 		});
-		
-		function ad(data){
+
+		function ad(data) {
 			var allow = 0, disallow = 0;
-			function bitit(value, position){
+			function bitit(value, position) {
 				if (value) {
 					allow |= (1 << position);
 				} else {
 					disallow |= (1 << position);
-				}	
+				}
 			}
-		
-			for(var perm in data){
-				switch(perm){
+
+			for (var perm in data) {
+				switch (perm) {
 					case "canCreateInstantInvite":
 						bitit(data[perm], 0);
 						break;
@@ -1116,13 +1116,13 @@ class Client {
 						break;
 				}
 			}
-	
+
 			return {
 				allow: allow,
 				deny: disallow
 			};
 		}
-		
+
 	}
 	
 	//def createws
@@ -1147,14 +1147,14 @@ class Client {
 		
 		//message
 		this.websocket.onmessage = function (e) {
-			
-			if(e.type === "Binary"){
-				if(!zlib)
+
+			if (e.type === "Binary") {
+				if (!zlib)
 					zlib = require("zlib");
-				
+
 				e.data = zlib.inflateSync(e.data).toString();
 			}
-			
+
 			var dat = false, data = {};
 
 			try {
@@ -1203,7 +1203,7 @@ class Client {
 					var channel = self.getChannel("id", data.channel_id);
 					for (var mention of data.mentions) {
 						var user = self.addUser(mention);
-						if(channel.server)
+						if (channel.server)
 							mentions.push(channel.server.getMember("id", user.id) || user);
 						else
 							mentions.push(user);
@@ -1249,10 +1249,10 @@ class Client {
 
 						data.mentions = data.mentions || [];
 						var mentions = [];
-						
+
 						for (var mention of data.mentions) {
 							var user = self.addUser(mention);
-							if(channel.server)
+							if (channel.server)
 								mentions.push(channel.server.getMember("id", user.id) || user);
 							else
 								mentions.push(user);
@@ -1281,12 +1281,12 @@ class Client {
 					}
 
 					break;
-					
+
 				case "GUILD_BAN_ADD":
-					
+
 					var bannedUser = self.addUser(data.user);
 					var server = self.getServer("id", data.guild_id);
-					
+
 					self.trigger("userBanned", bannedUser, server);
 
 				case "CHANNEL_DELETE":
@@ -1388,15 +1388,15 @@ class Client {
 					}
 
 					break;
-					
+
 				case "GUILD_MEMBER_UPDATE":
-					
+
 					var user = self.addUser(data.user);
 					var server = self.getServer("id", data.guild_id);
 					var member = server.getMember("id", user.id);
 					self.trigger("serverMemberUpdate", member, data.roles);
 					server.getMember("id", user.id).rawRoles = data.roles;
-					
+
 					break;
 
 				case "USER_UPDATE":
@@ -1457,7 +1457,11 @@ class Client {
 
 					if (channelInCache && serverInCache) {
 
-						var newChann = new Channel(data, serverInCache);
+						var newChann;
+						if(data.type === "text")
+							newChann = new Channel(data, serverInCache);
+						else
+							newChann = new VoiceChannel(data, serverInCache);
 						newChann.messages = channelInCache.messages;
 
 						self.trigger("channelUpdate", channelInCache, newChann);
@@ -1550,7 +1554,11 @@ class Client {
 	//def addChannel
 	addChannel(data, serverId) {
 		if (!this.getChannel("id", data.id)) {
-			this.channelCache.push(new Channel(data, this.getServer("id", serverId)));
+			if (data.type === "text") {
+				this.channelCache.push(new Channel(data, this.getServer("id", serverId)));
+			} else {
+				this.channelCache.push(new VoiceChannel(data, this.getServer("id", serverId)));
+			}
 		}
 		return this.getChannel("id", data.id);
 	}
@@ -1691,7 +1699,7 @@ class Client {
 						"$referrer": "",
 						"$referring_domain": ""
 					},
-					compress : self.options.compress
+					compress: self.options.compress
 				}
 			};
 			this.websocket.send(JSON.stringify(data));
@@ -1782,14 +1790,14 @@ class Client {
 
 						for (var mention of data.mentions) {
 							var user = self.addUser(mention);
-							if(channel.server)
+							if (channel.server)
 								mentions.push(channel.server.getMember("id", user.id) || user);
 							else
 								mentions.push(user);
 						}
 
 						if (channel) {
-							var msg = channel.addMessage(new Message(data, channel, mentions, {id:data.author.id}));
+							var msg = channel.addMessage(new Message(data, channel, mentions, { id: data.author.id }));
 							resolve(msg);
 						}
 					}
