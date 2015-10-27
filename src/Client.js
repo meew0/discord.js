@@ -2,7 +2,7 @@
 var Endpoints = require("./Endpoints.js");
 var User = require("./user.js");
 var Server = require("./server.js");
-var Channel = require("./channel.js"), VoiceChannel = require("./VoiceChannel.js");
+var Channel = require("./channel.js"), VoiceChannel = require("./VoiceChannel.js"), VoiceChannelConnection = require("./VoiceChannelConnection.js");
 var Message = require("./message.js");
 var Invite = require("./invite.js");
 var PMChannel = require("./PMChannel.js");
@@ -53,6 +53,7 @@ class Client {
 		this.typingIntervals = {};
 		this.email = "abc";
 		this.password = "abc";
+		this.voiceChannels = {};
 		
 		/*
 			State values:
@@ -201,6 +202,40 @@ class Client {
 			}
 		});
 
+	}
+	
+	joinVoiceChannel(channel, callback=function(){}){
+		
+		var self = this;
+		
+		return new Promise(function(resolve, reject){
+			
+			var channelID = self.resolveDestination(channel);
+			var channel = self.getChannel("id", channelID);
+			
+			if(!channel){
+				var err = new Error("channel does not exist");
+				callback(err);
+				reject(err);
+				return;
+			}
+			
+			if(!(channel instanceof VoiceChannel)){
+				var err = new Error("channel not a voice channel");
+				callback(err);
+				reject(err);
+				return;
+			}
+			
+			if(self.voiceChannels[channel.id]){
+				callback(new Error("already connected/joining channel"));
+				reject(new Error("already connected/joining channel"));
+			}else{
+				self.voiceChannels[channel.id] = new VoiceChannelConnection(channel);
+			}
+			
+		});
+		
 	}
 
 	banMember(user, server, daysToDeleteMessage = 1, cb = function (err) { }) {
