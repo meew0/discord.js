@@ -1,6 +1,8 @@
 var WebSocket = require("ws");
 var dns = require("dns");
 var udp = require("dgram");
+var VoicePacket = require("./VoicePacket.js");
+var fs = require("fs");
 
 class VoiceChannelConnection {
 
@@ -14,7 +16,13 @@ class VoiceChannelConnection {
 		this.session;
 		this.endpoint;
 		this.connected = false;
-		this.errorCallback = function(e){console.log(e.stack)};
+		this.errorCallback = function (e) {  };
+		this.closed = function () { console.log("closed") }
+		this.success = function () { console.log("success"); 
+		
+		var readstream = fs.createReadStream("C:/users/amish/desktop/audio.wav");
+		
+		this.test(readstream) }
 
 		this.initData = {
 			op: 4,
@@ -63,13 +71,12 @@ class VoiceChannelConnection {
                             "data": {
                                 "address": self.discordIP,
                                 "port": Number(self.discordPort),
-                                "mode": self.websocket.modes[0] //Plain
+                                "mode": self.websocketData.modes[0] //Plain
                             }
                         }
                     }
                     self.websocket.send(JSON.stringify(wsDiscPayload));
                     self.firstPacket = false;
-					console.log("some shit happened yo");
 				}
 
 			});
@@ -96,7 +103,7 @@ class VoiceChannelConnection {
 		};
 
 		self.websocket.onclose = function () {
-			console.log("i cri");
+			self.closed();
 		}
 
 		self.websocket.onmessage = function (e) {
@@ -119,9 +126,9 @@ class VoiceChannelConnection {
 						self.websocket.send(JSON.stringify({
 							"op": 3,
 							"d": null
-						}), self.websocketData.heartbeat_interval);
-					});
-					
+						}))
+					}, self.websocketData.heartbeat_interval);
+
 					var udpPacket = new Buffer(70);
 					udpPacket.writeUIntBE(data.ssrc, 0, 4);
 					self.udp.send(
@@ -131,12 +138,74 @@ class VoiceChannelConnection {
 						data.port,
 						self.endpoint,
 						self.errorCallback
-					);
+						);
 					break;
-
+				case 4:
+					self.connected = true;
+					self.selectedMode = data.mode;
+					self.success();
+					break;
 			}
 
 		}
+	}
+
+	sendAudio(sequence, timestamp, opusEncoder, wavOutput, udpClient, vWS, speakingPacket, sPInterval) {
+		var self = this;
+
+		var buff = wavOutput.read(1920);
+		if (buff && buff.length === 1920) {
+			sequence + 10 < 65535 ? sequence += 1 : sequence = 0;
+			timestamp + 9600 < 4294967295 ? timestamp += 960 : timestamp = 0;
+
+			var encoded = opusEncoder.encode(buff, 1920);
+			var audioPacket = VoicePacket(encoded, sequence, timestamp, self.websocket.ssrc);
+
+			console.log(audioPacket);
+
+			udpClient.send(audioPacket, 0, audioPacket.length, self.websocketData.port, self.endpoint, self.errorCallback);
+			setTimeout(function () {
+				self.sendAudio(sequence, timestamp, opusEncoder, wavOutput, udpClient, vWS, speakingPacket, sPInterval);
+			}, 20);
+		} else {
+			speakingPacket.d.data.speaking = false;
+			vWS.send(JSON.stringify(speakingPacket));
+			clearInterval(sPInterval);
+		}
+	}
+
+	test(stream) {
+
+		var Opus = require("node-opus");
+		var Wav = require("wav");
+		var self = this;
+            var sequence = 0;
+            var timestamp = 0;
+
+		var speakingPacket = {
+			"op": 5,
+			"d": {
+				"speaking": true,
+				"delay": 5
+			}
+		}
+
+		self.websocket.send(JSON.stringify(speakingPacket));
+		var sPInterval = setInterval(function () {
+			self.websocket.send(JSON.stringify(speakingPacket));
+		}, 5);
+                    
+		var opusEncoder = new Opus.OpusEncoder(48000, 1);
+		var wavReader = new Wav.Reader();
+		
+
+		var wavOutput = stream.pipe(wavReader);
+
+		wavOutput.on('readable', function () {
+			console.log(wavOutput);
+			self.sendAudio(sequence, timestamp, opusEncoder, wavOutput, self.udp, self.websocket, speakingPacket, sPInterval);
+		});
+
 	}
 
 }
