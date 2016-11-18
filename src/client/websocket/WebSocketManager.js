@@ -1,4 +1,4 @@
-const WebSocket = require('ws');
+const WebSocket = typeof window !== 'undefined' ? window.WebSocket : require('ws'); // eslint-disable-line no-undef
 const EventEmitter = require('events').EventEmitter;
 const Constants = require('../../util/Constants');
 const zlib = require('zlib');
@@ -78,6 +78,7 @@ class WebSocketManager extends EventEmitter {
     this.normalReady = false;
     if (this.status !== Constants.Status.RECONNECTING) this.status = Constants.Status.CONNECTING;
     this.ws = new WebSocket(gateway);
+    if (this.client.browser) this.ws.binaryType = 'arraybuffer';
     this.ws.onopen = () => this.eventOpen();
     this.ws.onclose = (d) => this.eventClose(d);
     this.ws.onmessage = (e) => this.eventMessage(e);
@@ -176,6 +177,7 @@ class WebSocketManager extends EventEmitter {
     this.reconnecting = false;
     const payload = this.client.options.ws;
     payload.token = this.client.token;
+    if (this.client.browser) payload.compress = false;
     if (this.client.options.shardCount > 0) {
       payload.shard = [Number(this.client.options.shardId), Number(this.client.options.shardCount)];
     }
@@ -197,7 +199,7 @@ class WebSocketManager extends EventEmitter {
      * Emitted whenever the client websocket is disconnected
      * @event Client#disconnect
      */
-    clearInterval(this.client.manager.heartbeatInterval);
+    this.client.clearInterval(this.client.manager.heartbeatInterval);
     if (!this.reconnecting) this.client.emit(Constants.Events.DISCONNECT);
     if (event.code === 4004) return;
     if (event.code === 4010) return;
@@ -213,6 +215,10 @@ class WebSocketManager extends EventEmitter {
   eventMessage(event) {
     let packet;
     try {
+      if (this.client.browser && event.data instanceof ArrayBuffer) {
+        event.data = String.fromCharCode.apply(null, new Uint16Array(event.data));
+        event.data = zlib.inflateSync(event.data).toString();
+      }
       if (event.binary) event.data = zlib.inflateSync(event.data).toString();
       packet = JSON.parse(event.data);
     } catch (e) {

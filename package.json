@@ -5,7 +5,8 @@
   "main": "./src/index",
   "scripts": {
     "test": "eslint src/ && node docs/generator/generator.js silent",
-    "docs": "node docs/generator/generator.js"
+    "docs": "node docs/generator/generator.js",
+    "web-dist": "npm install && ./node_modules/parallel-webpack/bin/run.js"
   },
   "repository": {
     "type": "git",
@@ -27,16 +28,22 @@
   "homepage": "https://github.com/hydrabolt/discord.js#readme",
   "dependencies": {
     "superagent": "^2.3.0",
-    "tweetnacl": "^0.14.0",
-    "ws": "^1.1.0"
+    "tweetnacl": "^0.14.3",
+    "ws": "^1.1.1"
   },
   "peerDependencies": {
     "node-opus": "^0.2.0",
     "opusscript": "^0.0.1"
   },
   "devDependencies": {
+    "bufferutil": "^1.2.1",
     "eslint": "^3.10.0",
-    "jsdoc-to-markdown": "^2.0.0"
+    "jsdoc-to-markdown": "^2.0.0",
+    "json-loader": "^0.5.4",
+    "parallel-webpack": "^1.5.0",
+    "uglify-js": "github:mishoo/UglifyJS2#harmony",
+    "utf-8-validate": "^1.2.1",
+    "webpack": "^1.13.3"
   },
   "engines": {
     "node": ">=6.0.0"
