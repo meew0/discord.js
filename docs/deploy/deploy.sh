@@ -14,6 +14,8 @@ if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
   exit 0
 fi
 
+echo "Build information: PR $TRAVIS_PULL_REQUEST Branch $TRAVIS_BRANCH Tag $TRAVIS_TAG"
+
 # Ignore travis checking other branches irrelevant to users
 if [ "$TRAVIS_BRANCH" != "master" -a "$TRAVIS_BRANCH" != "indev" -a "$TRAVIS_BRANCH" != "travis-updates" ]; then
   echo "deploy.sh: Ignoring push to another branch than master/indev"
@@ -28,6 +30,8 @@ if [ -n "$TRAVIS_TAG" ]; then
   echo "deploy.sh: This is a tag build, proceeding accordingly"
   SOURCE=$TRAVIS_TAG
 fi
+
+echo "Source: $SOURCE"
 
 REPO=`git config remote.origin.url`
 SSH_REPO=${REPO/https:\/\/github.com\//git@github.com:}
