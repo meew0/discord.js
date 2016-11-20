@@ -79,7 +79,7 @@ git clone $REPO out -b $TARGET_BRANCH
 
 # Move the generated webpack over
 mv webpack/discord.js out/discord-$SOURCE.js
-mv webpack/discord-min.js out/discord-$SOURCE-min.js
+mv webpack/discord.min.js out/discord-$SOURCE.min.js
 
 # Commit and push
 cd out
