@@ -56,8 +56,6 @@ build
 # Checkout the repo in the target branch so we can build docs and push to it
 TARGET_BRANCH="docs"
 git clone $REPO out -b $TARGET_BRANCH
-git config user.name "Travis CI"
-git config user.email "$COMMIT_AUTHOR_EMAIL"
 
 # Move the generated JSON file to the newly-checked-out repo, to be committed
 # and pushed
@@ -66,6 +64,8 @@ mv docs/docs.json out/$SOURCE.json
 # Commit and push
 cd out
 git add .
+git config user.name "Travis CI"
+git config user.email "$COMMIT_AUTHOR_EMAIL"
 git commit -m "Docs build: ${SHA}"
 git push $SSH_REPO $TARGET_BRANCH
 
@@ -76,8 +76,6 @@ rm -rf out
 # ...then do the same once more for the webpack
 TARGET_BRANCH="webpack"
 git clone $REPO out -b $TARGET_BRANCH
-git config user.name "Travis CI"
-git config user.email "$COMMIT_AUTHOR_EMAIL"
 
 # Move the generated webpack over
 mv webpack/discord.js out/discord-$SOURCE.js
@@ -86,5 +84,7 @@ mv webpack/discord-min.js out/discord-$SOURCE-min.js
 # Commit and push
 cd out
 git add .
+git config user.name "Travis CI"
+git config user.email "$COMMIT_AUTHOR_EMAIL"
 git commit -m "Webpack build: ${SHA}"
 git push $SSH_REPO $TARGET_BRANCH
