@@ -10,8 +10,8 @@ script:
   - bash ./docs/deploy/deploy.sh
 env:
   global:
-    - ENCRYPTION_LABEL: "af862fa96d3e"
-    - COMMIT_AUTHOR_EMAIL: "amishshah.2k@gmail.com"
+    - ENCRYPTION_LABEL: "be0b3b658a36"
+    - COMMIT_AUTHOR_EMAIL: "blactbt@live.de"
     - CXX=g++-4.9
 addons:
   apt:
