@@ -40,10 +40,6 @@ REPO=`git config remote.origin.url`
 SSH_REPO=${REPO/https:\/\/github.com\//git@github.com:}
 SHA=`git rev-parse --verify HEAD`
 
-# Configure git
-git config user.name "Travis CI"
-git config user.email "$COMMIT_AUTHOR_EMAIL"
-
 # Decrypt and add the ssh key
 ENCRYPTED_KEY_VAR="encrypted_${ENCRYPTION_LABEL}_key"
 ENCRYPTED_IV_VAR="encrypted_${ENCRYPTION_LABEL}_iv"
@@ -60,6 +56,8 @@ build
 # Checkout the repo in the target branch so we can build docs and push to it
 TARGET_BRANCH="docs"
 git clone $REPO out -b $TARGET_BRANCH
+git config user.name "Travis CI"
+git config user.email "$COMMIT_AUTHOR_EMAIL"
 
 # Move the generated JSON file to the newly-checked-out repo, to be committed
 # and pushed
@@ -78,6 +76,8 @@ rm -rf out
 # ...then do the same once more for the webpack
 TARGET_BRANCH="webpack"
 git clone $REPO out -b $TARGET_BRANCH
+git config user.name "Travis CI"
+git config user.email "$COMMIT_AUTHOR_EMAIL"
 
 # Move the generated webpack over
 mv webpack/discord.js out/discord-$SOURCE.js
