@@ -15,7 +15,7 @@ if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
 fi
 
 # Ignore travis checking other branches irrelevant to users
-if [ "$TRAVIS_BRANCH" != "master" -a "$TRAVIS_BRANCH" != "indev" ]; then
+if [ "$TRAVIS_BRANCH" != "master" -a "$TRAVIS_BRANCH" != "indev" -a "$TRAVIS_BRANCH" != "travis-updates" ]; then
   echo "deploy.sh: Ignoring push to another branch than master/indev"
   build
   exit 0
